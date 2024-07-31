@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room</title>
+  <style>
+    #user-list li.ready {
+      color: green;
+      font-weight: bold;
+    }
+    #user-list li.not-ready {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Room</h1>
+  <div id="room-info"></div>
+  <div id="user-info">
+    <label for="nickname">Enter Nickname:</label>
+    <input type="text" id="nickname" required>
+    <button onclick="joinRoom()">Join Room</button>
+  </div>
+  <div id="ready-info" style="display:none;">
+    <button id="ready-button" onclick="toggleReady()">Ready</button>
+  </div>
+  <ul id="user-list"></ul>
+  <div id="animation" style="display:none;">
+    <h2>Champagne Popping!</h2>
+    <img src="champagne.gif" alt="Champagne Animation">
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const roomId = window.location.pathname.split('/').pop();
+    let isReady = false;
+
+    function joinRoom() {
+      const nickname = document.getElementById('nickname').value;
+      socket.emit('joinRoom', { roomId, nickname });
+      document.getElementById('user-info').style.display = 'none';
+      document.getElementById('ready-info').style.display = 'block';
+    }
+
+    function toggleReady() {
+      isReady = !isReady;
+      socket.emit('toggleReady', isReady);
+      document.getElementById('ready-button').innerText = isReady ? 'Not Ready' : 'Ready';
+    }
+
+    socket.on('roomData', (room) => {
+      document.getElementById('room-info').innerText = `Room: ${roomId}, Users:`;
+      const userList = document.getElementById('user-list');
+      userList.innerHTML = '';
+      room.users.forEach(user => {
+        const li = document.createElement('li');
+        li.innerText = user.name;
+        li.classList.add(user.ready ? 'ready' : 'not-ready');
+        userList.appendChild(li);
+      });
+    });
+
+    socket.on('roomFull', () => {
+      alert('Room is full');
+    });
+
+    socket.on('startAnimation', () => {
+      document.getElementById('ready-info').style.display = 'none';
+      document.getElementById('animation').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
